@@ -1,0 +1,1 @@
+savedcmd_/home/work/km/ioctl/ioctl.ko := ld -r -m elf_x86_64 -z noexecstack --no-warn-rwx-segments --build-id=sha1  -T scripts/module.lds -o /home/work/km/ioctl/ioctl.ko /home/work/km/ioctl/ioctl.o /home/work/km/ioctl/ioctl.mod.o
