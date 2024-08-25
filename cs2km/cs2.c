@@ -119,12 +119,17 @@ static struct file_operations fops={
 
 #define MYMAJOR 90 //Use a free device id, check it by calling cat /proc/devices
 
+// sudo insmod cs2.ko
+// sudo mknod /dev/comdevice c 90 0
+
+// sudo rmmod cs2
+
 static int __init startup(void){
 	int retval;
 	printk(KERN_INFO "[*] Kernel module started \n");
 
 	// register device nr 
-	retval = register_chrdev(MYMAJOR, "my_dev_nr", &fops);
+	retval = register_chrdev(MYMAJOR, "kmdevice", &fops);
 
 	if (retval == 0){
 		printk(KERN_INFO "[+] registered device number - Major: %d, Minor: %d\n", MYMAJOR, 0);
@@ -147,4 +152,3 @@ static void __exit cleanup(void) {
 
 module_init(startup);
 module_exit(cleanup);
-
