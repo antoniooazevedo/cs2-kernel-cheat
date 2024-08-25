@@ -10,7 +10,7 @@ int main(){
 	int answer;
 	struct greeter_struct gs = {4, "string"};
 
-	int dev = open("/dev/mydevice", O_RDONLY);
+	int dev = open("/dev/device_nr", O_RDONLY);
 	if (dev == -1){
 		printf("Not successful\n");
 		return -1;
