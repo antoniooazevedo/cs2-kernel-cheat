@@ -1,11 +1,11 @@
 CONFIG_MODULE_SIG=n
 
-obj-m += cs2.o
+obj-m += kernel/cs2.o
 
 all:
 	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) modules
-	g++ test.cpp -o test
+	g++ user/main.cpp -o out/cheat -lX11
 
 clean:
 	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) clean 
-	rm test
+	rm out/cheat
