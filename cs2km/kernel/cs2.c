@@ -72,7 +72,6 @@ static long int ioctl(struct file* File, unsigned cmd, unsigned long arg) {
 
 		task = pid_task(find_vpid(pm.pid), PIDTYPE_PID);
 		if (!task) {
-			printk(KERN_ALERT "[-] could not find the process with PID %d\n", pm.pid);
 			return -ESRCH;
 		}
 
@@ -108,12 +107,12 @@ static long int ioctl(struct file* File, unsigned cmd, unsigned long arg) {
 
 			retval = access_process_vm(task, (unsigned long)pm.address, kernel_buffer, pm.length, FOLL_FORCE | FOLL_WRITE);
 			if (retval <= 0) {
-				printk(KERN_ALERT "[-] error reading memory from process\n");
+				printk(KERN_ALERT "[-] error writing memory from process\n");
 				kfree(kernel_buffer);
 				return -EFAULT;
 			}
 
-			printk(KERN_INFO "[+] read %zu bytes from process %d at address %p\n", pm.length, pm.pid, pm.address);
+			printk(KERN_INFO "[+] wrote %zu bytes from process %d at address %p\n", pm.length, pm.pid, pm.address);
 			kfree(kernel_buffer);
 		}
 		break;
