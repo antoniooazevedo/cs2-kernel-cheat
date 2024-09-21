@@ -2,6 +2,7 @@
 #include <linux/kernel.h>
 #include <linux/fs.h>
 #include <linux/ioctl.h>
+#include <linux/cdev.h>
 #include <linux/uaccess.h>
 #include <linux/sched.h>       // For task_struct and process management
 #include <linux/mm.h>          // For memory management structures
@@ -11,6 +12,11 @@
 #include "headers.h"
 
 MODULE_LICENSE("GPL");
+
+// Device data
+static dev_t dev_nr;
+static struct class *dev_class;
+static struct cdev device;
 
 /**
  * @brief This function is called whenever a device file is opened
@@ -128,38 +134,63 @@ static struct file_operations fops = {
 	.unlocked_ioctl = ioctl
 };
 
-#define MYMAJOR 90 //Use a free device id, check it by calling cat /proc/devices
+#define DRIVER_NAME "kmdevice"
+#define DRIVER_CLASS "Cs2KmClass"
 
 // sudo insmod cs2.ko
 // sudo mknod /dev/comdevice c 90 0
-
 // sudo rmmod cs2
 
 static int __init startup(void) {
-	int retval;
 	printk(KERN_INFO "[*] Kernel module started \n");
 
-	// register device nr 
-	retval = register_chrdev(MYMAJOR, "kmdevice", &fops);
-
-	if (retval == 0) {
-		printk(KERN_INFO "[+] registered device number - Major: %d, Minor: %d\n", MYMAJOR, 0);
-	}
-	else if (retval > 0) {
-		printk(KERN_INFO "[+] registered device number - Major: %d, Minor: %d\n", retval >> 20, retval & 0xfffff);
-	}
-	else {
-		printk(KERN_ALERT "[-] could not register device number\n");
+	// Allocate device nr
+	if (alloc_chrdev_region(&dev_nr, 0, 1, DRIVER_NAME) < 0) {
+		printk(KERN_ALERT "[-] device nr couldnt be allocated\n");
 		return -1;
+	}	
+
+	printk(KERN_INFO "[+] device nr major: %d, minor: %d\n", dev_nr>>20, dev_nr && 0xfffff);
+
+	// Create device class
+	if ((dev_class = class_create(DRIVER_CLASS)) == NULL) {
+		printk(KERN_ALERT "[-] device class could not be created\n");
+		goto ClassError;
+	}
+
+	// Create device file
+	if(device_create(dev_class, NULL, dev_nr, NULL, DRIVER_NAME) == NULL){
+		printk(KERN_ALERT "[-] device file could not be created\n");
+		goto FileError;
+	}
+
+	// Initialize device file
+	cdev_init(&device, &fops);
+
+	// Registering device to kernel
+	if (cdev_add(&device, dev_nr, 1) == -1){
+		printk(KERN_ALERT "[-] registering of device to kernel failed\n");
+		goto AddError;
 	}
 
 	return 0;
+AddError:
+	device_destroy(dev_class, dev_nr);
+FileError:
+	class_destroy(dev_class);
+ClassError:
+	unregister_chrdev(dev_nr, DRIVER_NAME);
+	return -1;
 }
 
 static void __exit cleanup(void) {
-	unregister_chrdev(MYMAJOR, "my_dev_nr");
+	cdev_del(&device);
+	device_destroy(dev_class, dev_nr);
+	class_destroy(dev_class);
+	unregister_chrdev(dev_nr, DRIVER_NAME);
 	printk(KERN_INFO "[*] Kernel module unloaded \n");
 }
+
 
 module_init(startup);
 module_exit(cleanup);
